@@ -5,6 +5,7 @@ import asyncio
 import json
 import os
 import sys
+import logging
 from typing import AsyncIterator, Awaitable, Callable
 
 from aiohttp import web
@@ -19,6 +20,9 @@ from .types import (
     ReportFeedbackRequest,
     SettingsResponse,
 )
+
+
+log = logging.getLogger(__name__)
 
 
 # We need to override this to allow POST requests to use SSE
@@ -61,6 +65,7 @@ async def auth_middleware(request: web.Request, handler):
 class PoeBot:
     async def __call__(self, request: web.Request) -> web.Response:
         body = await request.json()
+        log.debug(f"got request: {json.dumps(body, indent=4)}")
         request_type = body["type"]
         if request_type == "query":
             await self.__handle_query(body, request)
@@ -68,7 +73,7 @@ class PoeBot:
             # is doing to create a streaming response.
             return None  # type: ignore
         elif request_type == "settings":
-            settings = await self.get_settings()
+            settings = await self.get_settings(body)
             return web.Response(
                 text=json.dumps(settings), content_type="application/json"
             )
@@ -86,6 +91,7 @@ class PoeBot:
     async def __handle_query(self, query: QueryRequest, request: web.Request) -> None:
         async with sse_response(request, response_cls=_SSEResponse) as resp:
             async for event_type, data in self.get_response(query, request):
+                log.debug(f"sending response: {data=}, {event_type=}")
                 await resp.send(json.dumps(data), event=event_type)
             await resp.send("{}", event="done")
 
@@ -142,7 +148,7 @@ class PoeBot:
         """Called when we receive user feedback such as likes."""
         pass
 
-    async def get_settings(self) -> SettingsResponse:
+    async def get_settings(self, request: SettingsRequest) -> SettingsResponse:
         """Return the settings for this bot."""
         return {}
 
