@@ -93,6 +93,7 @@ class PoeBot:
             async for event_type, data in self.get_response(query, request):
                 log.debug(f"sending response: {data=}, {event_type=}")
                 await resp.send(json.dumps(data), event=event_type)
+            log.debug("sending done event")
             await resp.send("{}", event="done")
 
     @staticmethod

@@ -112,7 +112,7 @@ class BotOptions(Enum):
         parser=_parse_bool,
     )
     content_type = OptionsInfo[ContentType](
-        description="Send meta events to the Poe server.",
+        description="The content type of the bot responses.",
         default_value="text/markdown",
         parser=_parse_content_type,
     )
